@@ -23,8 +23,19 @@ function! s:first_readable_file(files) abort
 endfunction
 
 function! s:prefix_for_test(file)
+  if !exists('g:turbux_spec_options')
+    let test_options = ""
+  else
+    let test_options = substitute(g:turbux_spec_options, "{output_filename}", fnamemodify(a:file, ':t:r'),"g")." "
+    if match(test_options, ";") != -1
+      let s:before_send = strpart(test_options, match(test_options, ";"))
+      let test_options = substitute(test_options, ";.*", "","")
+    else
+      let s:before_send = ""
+    endif
+  endif
   if a:file =~# '_spec.rb$'
-    return "rspec "
+    return "rspec ".test_options
   elseif a:file =~# '_test.rb$'
     return "ruby -Itest "
   elseif a:file =~# '.feature$'
@@ -68,7 +79,7 @@ function! s:send_test(executable)
       let executable = 'echo "Warning: No command has been run yet"'
     endif
   endif
-  return Send_to_Tmux("".executable."\n")
+  return Send_to_Tmux("".executable." ".s:before_send."\n")
 endfunction
 
 " Public functions
